@@ -87,10 +87,71 @@
 
 
         <p>Okay he's a very nice person!</p>
-        <h2>Appearance</h2>
         <h2>Philosophy</h2>
+            <table>
+                <colgroup>
+                    <col style="width: 50%;">
+                    <col style="width: 50%;">
+                </colgroup>
+                <thread>
+                    <tr>
+                        <th>Name</th>
+                        <th>Image</th>
+                    </tr>
+                </thread>
+                <tbody>
+                    <tr>
+                        <th>The Republic by Plato</th>
+                        <td><img src="Images/Asgear-Philosophy/The-Republic.jpg"></td>
+                    </tr>
+                    <tr>
+                        <th>A Treatise of Human Nature by David Hume</th>
+                        <td><img src="Images/Asgear-Philosophy/A-Treatise-of-Human-Nature.jpg"></td>
+                    </tr>
+                    <tr>
+                        <th>Beyond Good and Evil by Friedrich Nietzsche</th>
+                        <td><img src="Images/Asgear-Philosophy/Beyond-Good-and-Evil.jpg"></td>
+                    </tr>
+                    <tr>
+                        <th>On the Genealogy of Morality by Friedrich Nietzsche</th>
+                        <td><img src="Images/Asgear-Philosophy/On-the-Genealogy-of-Morality.jpg"></td>
+                    </tr>
+                    <tr>
+                        <th>Utilitarianism by John Stuart Mill</th>
+                        <td><img src="Images/Asgear-Philosophy/Utilitarianism.jpg"></td>
+                    </tr>
+                    <tr>
+                        <th>Ethics: Inventing Right and Wrong by John Leslie Mackie</th>
+                        <td><img src="Images/Asgear-Philosophy/Ethics-Inventing-Right-and-Wrong.jpg"></td>
+                    </tr>
+                    <tr>
+                        <th>Ethics and the Limits of Philosophy by Bernard Williams</th>
+                        <td><img src="Images/Asgear-Philosophy/Ethics-and-the-Limits-of-Philosophy.jpeg"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <script>
+                const lightbox = document.createElement('div')
+                lightbox.className = 'lightbox'
+                const bigImg = document.createElement('img')
+                lightbox.appendChild(bigImg)
+                document.body.appendChild(lightbox)
 
-        <h1>Top Quotes</h1>
+                document.querySelectorAll('td img').forEach(img =>{
+                    img.addEventListener('click', () => {
+                        bigImg.src = img.src 
+                        bigImg.alt = img.alt 
+                        lightbox.classList.add('open')
+                    })
+                })
+                function closeLightbox() {
+                    lightbox.classList.remove('open')
+                }
+                lightbox.addEventListener('click', closeLightbox)
+                window.addEventListener('keydown', e => {
+                    if (e.key === 'Escape') closeLightbox()
+                })
+            </script> 
 
     </body>
 </html>
