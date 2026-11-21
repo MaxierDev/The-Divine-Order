@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
     <head>
         <title>The Divine Order</title>
-        <link rel="stylesheet" href="style.css">
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="stylesheet" href="style.css" type = "text/css" />
     </head>
+
     <body>
         <h1>Inspiration</h1>
         <p>These fictions inspired the world building of The Divine Order. The ranking is how close they are 
@@ -178,6 +181,29 @@
 
             </tbody>
         </table>
+        <script>
+            const lightbox = document.createElement('div')
+            lightbox.className = 'lightbox'
+            const bigImg = document.createElement('img')
+            lightbox.appendChild(bigImg)
+            document.body.appendChild(lightbox)
+
+            document.querySelectorAll('td img').forEach(img =>{
+                img.addEventListener('click', () => {
+                    bigImg.src = img.src 
+                    bigImg.alt = img.alt 
+                    lightbox.classList.add('open')
+                })
+            })
+            function closeLightbox() {
+                lightbox.classList.remove('open')
+            }
+
+            lightbox.addEventListener('click', closeLightbox)
+            window.addEventListener('keydown', e => {
+                if (e.key === 'Escape') closeLightbox()
+            })
+        </script> 
     </body>
 
 </html>
