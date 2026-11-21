@@ -1,11 +1,11 @@
 body {
-    font-family: 'Arial';
+    font-family: Arial, sans-serif; 
     background: azure; 
     color: purple;
 }
 
 table {
-    width: 100%;
+    width: 90%;
     box-shadow: 0 0 20px rgba(0,0,0,0.05);
     border-collapse: collapse; 
     width: 90%; 
@@ -18,15 +18,11 @@ table, th, td {
 }
 
 th {
-    justify-content: flex; 
-    align-items: center; 
     padding: 8px; 
     text-align: center; 
 }
 
 td {
-    justify-content: flex; 
-    align-items: center; 
     padding: 8px; 
     text-align: center; 
     height: 100px; 
@@ -42,4 +38,16 @@ blockquote {
     width: 28%; 
     font-size: 12px; 
     position: relative;
+}
+
+.secret-div{
+    padding-top: 10rem;
+    display: none; 
+}
+
+#secret {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    pointer-events: none; 
 }
