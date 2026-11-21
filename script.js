@@ -5,6 +5,7 @@ const secretDiv = document.querySelector('.secret-div')
 const keys = []
 const secretCode = ['t', 'h', 'e', 'd', 'i', 'v', 'i', 'n', 'e', 'o', 'r', 'd', 'e', 'r', 'enter']
 
+const canvas = document.getElementById('secret')
 const confettiSettings = { target:'secret', size: 1.4, max: 150}
 const confetti = new ConfettiGenerator(confettiSettings)
 
@@ -24,6 +25,9 @@ function keysDetector(e) {
             rotate: '1turn', 
             backgroundColor: '#fcba03', 
             duration: 2000,
+            complete: ()=> {
+                document.body.style.transform = ''
+            }
         })
 }
     }
