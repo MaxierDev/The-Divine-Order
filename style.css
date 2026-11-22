@@ -11,6 +11,12 @@ p {
   font-size: 14px;
 }
 
+li {
+  text-align: left;
+  font: Verdana;
+  font-size: 14px;
+}
+
 a {
   text-align: left;
   font: Verdana;
