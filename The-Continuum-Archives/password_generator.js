@@ -6,8 +6,11 @@ var LAYERS = [
         name: "Basic ASCII & Extended Latin", 
         ranges: [[0x20, 0x24F]] }, 
     {
-        name: "Mathematical, Technical & Alchemcial Symbols", 
+        name: "Mathematical, Technical & Alchemical Symbols", 
         ranges: [[0x2200, 0x23FF], [0x27C0, 0x27EF], [0x2980, 0x2AFF], [0x1D400, 0x1D7FF], [0x1F700, 0x1F77F]]},
+    {
+        name: "Box Drawing, Block Elements & Braille",
+        ranges: [[0x2500, 0x259F], [0x2800, 0x28FF]],},
     {
         name: "Ancient & Historic Scripts", 
         assignedOnly: true,
@@ -30,14 +33,7 @@ var LAYERS = [
         
 ]
 
-LAYERS.forEach(function (layer) {
-    layer.total = 0; 
-    layer.ranges.forEach(function (r) {
-        layer.total += r[1] - r[0] +1; 
-    })
-});
-
-var layerSelect = document.getElementById("layer"); 
+var layerList = document.getElementById("layerList");
 var layerInfo = document.getElementById("layerInfo"); 
 var output = document.getElementById("password"); 
 var generateBtn = document.getElementById("btn"); 
@@ -45,31 +41,82 @@ var copyBtn = document.getElementById("copyBtn");
 var statusLine = document.getElementById("status");
 var copyTimer = null; 
 var CurrentPassword = ""; 
+var layerBoxes = []; 
+var pool = { ranges: [], total: 0}; 
+var assigned = /^[^\p{Cn}\p{Co}\p{Cs}]$/u; 
+
+var ALL_INDEX = LAYERS.length - 1; 
+
+
+function sumRanges(ranges) {
+    var total = 0; 
+    ranges.forEach(function (r){
+        total += r[1] - r[0] + 1; 
+    })
+    return total; 
+}
+
+function keepAssigned(ranges) {
+    var out = []; 
+    ranges.forEach(function (r) {
+        var start = null; 
+        for (var cp = r[0]; cp <= r[1]; cp++){
+            if (assigned.test(String.fromCodePoint(cp))) {
+                if (start === null) start = cp;
+            } else if (start !== null) {
+                out.push([start, cp - 1]); 
+                start = null; 
+            }
+        }
+        if (start !== null) out.push ([start, r[1]])
+    }); 
+    return out; 
+}
+
+LAYERS.forEach(function (layer) {
+    layer.effective = layer.assignedOnly ? keepAssigned(layer.ranges) : layer.ranges; 
+    layer.total = sumRanges(layer.effective);
+});
+
+function mergeRanges(ranges) {
+    var sorted = ranges.map(function (r) { return [r[0], r[1]]; }).sort(function (a, b) { return a[0] - b[0]; });
+    var merged = [];
+    sorted.forEach(function (r) {
+        var last = merged[merged.length -1];
+        if (last && r[0] <= last[1] + 1){
+            last[1] = Math.max(last[1], r[1]); 
+        } else {
+            merged.push(r);
+        }
+    });
+    return merged; 
+}
+
 
 LAYERS.forEach(function (layer, i) {
-    var option = document.createElement("option"); 
-    option.value = i; 
-    option.textContent = i + " \u00b7 " + layer.name; 
-    layerSelect.appendChild(option); 
+    var label = document.createElement("label"); 
+    label.className = "layerItem"; 
+
+    var box = document.createElement("input"); 
+    box.type = "checkbox"; 
+    box.value = i; 
+    if (i === 0) box.checked = true; 
+
+    var name = document.createElement("span"); 
+    name.textContent = i + " \u00B7 " + layer.name; 
+
+    var count = document.createElement("small"); 
+    count.textContent = layer.total.toLocaleString(); 
+
+    label.appendChild(box); 
+    label.appendChild(name); 
+    label.appendChild(count); 
+    layerList.appendChild(label); 
+    layerBoxes.push(box); 
 }); 
 
 function hex(n) {
-    return "U+" + n.toString(16).toUppercase().padStart(4, "0");
-}
-
-function getSelectedlayer() {
-    return LAYERS[parseInt(layerSelect.value, 10)];
-}
-
-
-
-function getRandomIndex(max) {
-    var limit = Math.floor(4294967296/max)*max; 
-    var array = new Uint32Array(1)
-    do {
-        crypto.getRandomValues(array);
-    } while (array[0]>=limit);
-    return array[0] % max;
+    return "U+" + n.toString(16).toUpperCase().padStart(4, "0");
 }
 
 function getSelectedLength() {
@@ -83,12 +130,13 @@ function autoResize() {
 }
 
 function getPassword() {
-    var layer = getSelectedlayer();
+    if (pool.total === 0) return; 
+
     var passwordLength = getSelectedLength();
     var parts = [];
 
     for (var i=0; i < passwordLength; i++) {
-        parts.push(String.fromCodePoint(getRandomCodepoint(layer)));
+        parts.push(String.fromCodePoint(getRandomCodepoint()));
     }
 
     CurrentPassword = parts.join(""); 
@@ -96,8 +144,8 @@ function getPassword() {
     autoResize();
 
     var bytes = new TextEncoder().encode(CurrentPassword).length; 
-    var entropy = Math.round(passwordLength * Math.log2(layer, total)); 
-    statusLine.textContent = passwordLength + "characters \u00B7 " + bytes.toLocaleString() + " bytes in UTF-8 \u00B7 about " + entropy.toLocaleString() + " bits of entropy";
+    var entropy = Math.round(passwordLength * Math.log2(pool.total)); 
+    statusLine.textContent = passwordLength + " characters \u00B7 " + bytes.toLocaleString() + " bytes in UTF-8 \u00B7 about " + entropy.toLocaleString() + " bits of entropy";
 
 
     copyBtn.disabled = false; 
@@ -132,41 +180,76 @@ function copyPassword() {
     }
 }
 
-function updateLayerInfo() {
-    var layer = getSelectedlayer(); 
-    var ranges = layer.ranges.map(function (r) {
-        return r[0] === r[1] ? hex(r[0]) : hex(r[0]) + "\u2013" + hex(r[1]);
-    }).join(", ")
-    var bits = Math.log2(layer.total).toFixed(2);
 
-    layerInfo.textContent = ranges + " \u00B7 " + layer.total.toLocaleString() +
-    " possible characters (" + bits + " bits each)." + (layer.note ? " " + layer.note : "");
+
+
+function getRandomCodepoint() {
+    var n = getRandomIndex(pool.total); 
+    for (var i = 0; i < pool.ranges.length; i++) {
+        var size = pool.ranges[i][1] - pool.ranges[i][0] + 1; 
+        if (n < size) {
+            return pool.ranges[i][0] + n; 
+        }
+        n -= size; 
+    }
 }
 
-var assigned = /^[^\p{Cn}\p{Co}\p{Cs}]$/u; 
+function getRandomIndex(max) {
+    var limit = Math.floor(4294967296/max)*max; 
+    var array = new Uint32Array(1)
+    do {
+        crypto.getRandomValues(array);
+    } while (array[0]>=limit);
+    return array[0] % max;
+}
 
-function getRandomCodepoint(layer) {
-    while (true) {
-        var n = getRandomIndex(layer.total); 
-        var cp = null; 
-        for (var i = 0; i < layer.ranges.length; i++) {
-            var size = layer.ranges [i][1] - layer.ranges[i][0] + 1; 
-            if (n < size) { cp = layer.ranges[i][0] + n; break;}
-            n -= size; 
+
+function updatePool() {
+    var allChecked = layerBoxes[ALL_INDEX].checked; 
+
+    layerBoxes.forEach(function (box, i){
+        box.disabled = allChecked && i !== ALL_INDEX; 
+    }); 
+
+    var chosen = [];
+    var notes = []; 
+    layerBoxes.forEach(function (box, i) {
+        var active = allChecked ? i === ALL_INDEX : box.checked; 
+        if (active) {
+            chosen.push(i); 
+            if (LAYERS[i].note) notes.push(LAYERS[i].note);
         }
-        if (!layer.assignedOnly || assigned.test(String.fromCodePoint(cp))) {
-            return cp; 
-        }
-    
+    });
+
+    var ranges = []; 
+    chosen.forEach(function (i) {
+        ranges = ranges.concat(LAYERS[i].effective); 
+    }); 
+
+    pool.ranges = mergeRanges(ranges); 
+    pool.total = sumRanges(pool.ranges);
+
+    generateBtn.disabled = pool.total === 0; 
+
+    if (pool.total === 0) {
+        layerInfo.textContent = "Select at least one layer."; 
+        return; 
     }
 
+    var rangeText = pool.ranges.map(function (r){
+        return r[0] === r[1] ? hex(r[0]) : hex(r[0]) + "\u2013" + hex(r[1]); }).join(", "); 
+
+    var bits = Math.log2(pool.total).toFixed(2);
+
+    layerInfo.textContent = chosen.length + (chosen.length === 1? " layer" : " layers") + " \u00b7 " + pool.total.toLocaleString() + " possible characters (" + bits + " bits each) \u00B7 " + rangeText + (notes.length ? " \u00B7 " + notes.join(" ") : ""); 
 
 }
 
 
-layerSelect.addEventListener("change", updateLayerInfo)
+layerList.addEventListener("change", updatePool)
 generateBtn.addEventListener("click", getPassword); 
 copyBtn.addEventListener("click", copyPassword);
 window.addEventListener("resize", autoResize);
 
-updateLayerInfo(); 
+updatePool(); 
+
